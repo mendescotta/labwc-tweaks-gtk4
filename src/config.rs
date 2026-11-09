@@ -10,6 +10,43 @@ pub struct Config {
     /// environment.d files labwc reads but this editor cannot represent.
     pub skipped: Vec<String>,
 }
+/// xmltree drops comments that precede the root element; copy them back
+/// (after the XML declaration) so a save keeps the file's header comment.
+fn restore_prolog_comments(original: Option<&[u8]>, written: Vec<u8>) -> Vec<u8> {
+    let Some(original) = original.and_then(|o| std::str::from_utf8(o).ok()) else {
+        return written;
+    };
+    let Some(root_at) = original.find("<labwc_config") else {
+        return written;
+    };
+    let mut comments = String::new();
+    let mut rest = &original[..root_at];
+    while let Some(start) = rest.find("<!--") {
+        let Some(len) = rest[start..].find("-->") else {
+            break;
+        };
+        comments.push_str(&rest[start..start + len + 3]);
+        comments.push('\n');
+        rest = &rest[start + len + 3..];
+    }
+    let Some(decl_end) = written.windows(2).position(|w| w == b"?>") else {
+        return written;
+    };
+    if comments.is_empty() || !written.starts_with(b"<?xml") {
+        return written;
+    }
+    let mut at = decl_end + 2;
+    if written.get(at) == Some(&b'\n') {
+        at += 1;
+    }
+    let mut out = written[..at].to_vec();
+    if out.last() != Some(&b'\n') {
+        out.push(b'\n');
+    }
+    out.extend_from_slice(comments.as_bytes());
+    out.extend_from_slice(&written[at..]);
+    out
+}
 fn read(path: &std::path::Path) -> Result<Option<Vec<u8>>> {
     match fs::read(path) {
         Ok(v) => Ok(Some(v)),
@@ -498,6 +535,7 @@ impl Config {
             &mut bytes,
             xmltree::EmitterConfig::new().perform_indent(true),
         )?;
+        let bytes = restore_prolog_comments(self.originals[0].as_deref(), bytes);
         let mut entries = Vec::new();
         if xml_changed {
             entries.push(("rc.xml".into(), self.originals[0].clone(), bytes));
@@ -539,6 +577,16 @@ fn merge_variants(layout: &str, variants: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn keeps_header_comment_before_root() {
+        let original = b"<?xml version=\"1.0\"?>\n<!-- header -->\n<labwc_config/>";
+        let written = b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<labwc_config />".to_vec();
+        let out = String::from_utf8(restore_prolog_comments(Some(original), written)).unwrap();
+        assert_eq!(
+            out,
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- header -->\n<labwc_config />"
+        );
+    }
     #[test]
     fn preserves_rules_and_specific_devices() {
         let d = tempfile::tempdir().unwrap();

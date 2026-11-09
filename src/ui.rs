@@ -6,7 +6,7 @@ use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 pub fn build(app: &gtk::Application) -> gtk::ApplicationWindow {
     let window = gtk::ApplicationWindow::builder()
         .application(app)
-        .title("Labwc Tweaks (GTK4)")
+        .title("Labwc Tweaks")
         .default_width(820)
         .default_height(620)
         .build();
