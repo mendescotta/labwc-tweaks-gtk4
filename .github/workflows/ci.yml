@@ -1,0 +1,22 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: ["1.89", "stable"]
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev pkg-config xvfb desktop-file-utils
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: clippy, rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+      - run: python3 tools/gui-smoke.py
+      - run: python3 tools/package-check.py
+      - run: git clone --depth 1 https://github.com/rustsec/advisory-db ~/.cargo/advisory-db && python3 tools/advisory-check.py
+      - run: desktop-file-validate data/org.labwc.TweaksGtk4.desktop

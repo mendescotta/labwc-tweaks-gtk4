@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Labwc Tweaks (GTK4)
+GenericName=Labwc Settings
+Comment=Independent GTK4 settings editor for the labwc compositor
+Exec=labwc-tweaks-gtk4
+Icon=org.labwc.TweaksGtk4
+Categories=Settings;DesktopSettings;
+Terminal=false
+StartupWMClass=org.labwc.TweaksGtk4

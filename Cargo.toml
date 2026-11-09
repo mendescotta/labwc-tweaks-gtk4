@@ -1,0 +1,32 @@
+[package]
+name = "labwc-tweaks-gtk4"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+license = "GPL-2.0-only"
+description = "Native Rust GTK4 settings for labwc"
+readme = "README.md"
+keywords = ["labwc", "wayland", "gtk4", "settings"]
+categories = ["gui"]
+include = [
+    "/Cargo.toml",
+    "/Cargo.lock",
+    "/LICENSE",
+    "/Makefile",
+    "/README.md",
+    "/src/**/*.rs",
+    "/data/*",
+    "/docs/*.md",
+    "/tools/*.py",
+]
+[dependencies]
+gtk = { package = "gtk4", version = "0.9" }
+xmltree = { version = "0.11", features = ["attribute-order"] }
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+strip = true
