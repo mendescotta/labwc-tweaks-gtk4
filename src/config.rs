@@ -364,7 +364,7 @@ impl Config {
                     .position(|c| c.as_element().is_some_and(|e| e.name == section))
                     .unwrap_or(root.children.len());
                 root.children
-                    .retain(|c| !c.as_element().is_some_and(|e| e.name == section));
+                    .retain(|c| c.as_element().is_none_or(|e| e.name != section));
                 for (offset, c) in wrapper
                     .children
                     .into_iter()
